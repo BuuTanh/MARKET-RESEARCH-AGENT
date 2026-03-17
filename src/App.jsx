@@ -31,22 +31,55 @@ import {
   Cell
 } from 'recharts';
 
-/* --- Knowledge Base (AI Intelligence Brain) --- */
+/* --- Jungsung Brand Knowledge Base --- */
+const JUNGSUNG_KNOWLEDGE = {
+  brand: {
+    name: "Jungsung (정성)",
+    ceo: "In-kyung Kim",
+    philosophy: "Triết lý 3 Không: 0% chất phụ gia, 0% hương liệu nhân tạo, 100% nguyên liệu tự nhiên.",
+    mission: "Mang tinh hoa gia vị truyền thống Hàn Quốc đến từng bữa cơm gia đình với sự tận tâm (Jungsung).",
+    safety: "Chứng nhận HACCP, quy trình sản xuất khép kín hiện đại.",
+  },
+  products: [
+    { name: "Bột Nấm Hương 100%", description: "Nấm hương nội địa Hàn Quốc, giữ trọn vị Umami." },
+    { name: "Nước Tương Dasima", description: "Vị ngọt thanh từ tảo bẹ tự nhiên." },
+    { name: "Chicken Stock (Cốt gà)", description: "Đậm đà, không bột ngọt, tốt cho sức khỏe." },
+    { name: "Khối Hải Sản Cô Đặc", description: "Tiện lợi, giữ trọn hương vị biển cả." }
+  ],
+  strategies: {
+    TOFU: {
+      goal: "Nhận thức (Awareness)",
+      tactics: ["Sử dụng video ngắn review bột nấm cho bé ăn dặm", "Blog về lối sống Clean Eating", "Ads Facebook nhắm mục tiêu mẹ bỉm"],
+      content: "Nội dung giáo dục khách hàng về tác hại của bột ngọt và lợi ích của gia vị tự nhiên."
+    },
+    MOFU: {
+      goal: "Cân nhắc (Consideration)",
+      tactics: ["Livestream nấu ăn cùng đầu bếp", "Mini-game tặng mẫu thử", "E-book công thức nấu ăn 15 phút"],
+      content: "So sánh trực quan giữa Jungsung và các loại gia vị công nghiệp."
+    },
+    BOFU: {
+      goal: "Chốt đơn (Conversion)",
+      tactics: ["Flash sale 24h trên TikTok Shop", "Combo dùng thử tiết kiệm", "Retargeting khách đã xem giỏ hàng"],
+      content: "Tập trung vào sự khan hiếm và cam kết chất lượng 100% tự nhiên."
+    }
+  }
+};
+
 const STRATEGY_BRAIN = {
   TOFU: {
     goal: "Nâng cao nhận thức (Awareness)",
     content: ["Blog review", "Infographic", "Video hướng dẫn cơ bản"],
-    keywords: ["là gì", "cách làm", "review", "so sánh"]
+    keywords: ["là gì", "cách làm", "review", "so sánh", "tác hại", "tự nhiên"]
   },
   MOFU: {
     goal: "Cân nhắc & Đánh giá (Consideration)",
     content: ["Case study", "Webinar", "Bảng so sánh tính năng"],
-    keywords: ["tốt nhất", "giá", "hiệu quả", "hỗ trợ"]
+    keywords: ["tốt nhất", "giá", "hiệu quả", "hỗ trợ", "an toàn", "chứng nhận"]
   },
   BOFU: {
     goal: "Chốt đơn (Conversion)",
     content: ["Mã giảm giá", "Dùng thử miễn phí", "Tư vấn 1-1"],
-    keywords: ["mua ở đâu", "chính hãng", "khuyến mãi", "đăng ký"]
+    keywords: ["mua ở đâu", "chính hãng", "khuyến mãi", "đăng ký", "địa chỉ", "đặt hàng"]
   }
 };
 
@@ -65,44 +98,55 @@ const TREND_DATA = [
 
 /* --- Configuration --- */
 const N8N_WEBHOOK_URL = "https://buutanh123.app.n8n.cloud/webhook/get-research-data"; 
-const N8N_ANALYZE_URL = "https://buutanh123.app.n8n.cloud/webhook/update-research"; // DÁN LINK WEBHOOK POST (MỤC 3 TRONG GUIDE) VÀO ĐÂY
+const N8N_ANALYZE_URL = "https://buutanh123.app.n8n.cloud/webhook/update-research";
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showChat, setShowChat] = useState(false);
   const [chatInput, setChatInput] = useState('');
-  const [messages, setMessages] = useState([{ role: 'bot', text: 'Chào bạn! Tôi là Jungsung AI. Hãy nhập từ khóa hoặc vấn đề Marketing của bạn nhé!' }]);
+  const [messages, setMessages] = useState([{ 
+    role: 'bot', 
+    text: 'Chào bạn! Tôi là chuyên gia Jungsung AI. Tôi hiểu rõ về tinh hoa gia vị Hàn Quốc và chiến lược Marketing. Bạn cần tôi tư vấn gì về từ khóa hay thương hiệu Jungsung không?' 
+  }]);
   const [liveData, setLiveData] = useState([]);
   const [isFetching, setIsFetching] = useState(false);
 
+  // Export CSV Logic
+  const exportToCSV = () => {
+    const data = liveData.length > 0 ? liveData : MOCK_KEYWORDS;
+    const headers = ["Keyword", "Search Volume", "Difficulty", "Intent", "Trend"];
+    const csvRows = [
+      headers.join(","),
+      ...data.map(row => [
+        row["Keyword (Từ khóa)"] || row.keyword || row.Keyword,
+        row.Search_Volume || row.volume || 0,
+        row.Difficulty || row.difficulty || "Low",
+        row.Intent || row.intent || "Awareness",
+        row.Trend || row.trend || "0%"
+      ].join(","))
+    ];
+    
+    const blob = new Blob([csvRows.join("\n")], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.setAttribute('hidden', '');
+    a.setAttribute('href', url);
+    a.setAttribute('download', 'Jungsung_Market_Analysis.csv');
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
   // Fetch data from n8n
   const refreshData = async () => {
-    if (!N8N_WEBHOOK_URL) {
-      console.warn("Chưa có Link Webhook n8n!");
-      return;
-    }
+    if (!N8N_WEBHOOK_URL) return;
     setIsFetching(true);
-    console.log("📡 Đang gọi n8n (GET) tại:", N8N_WEBHOOK_URL);
     try {
       const response = await fetch(N8N_WEBHOOK_URL);
-      if (!response.ok) {
-        throw new Error(`n8n báo lỗi ${response.status}: ${response.statusText}`);
-      }
       const data = await response.json();
-      console.log("✅ Dữ liệu n8n trả về:", data);
-      
-      if (!data || (Array.isArray(data) && data.length === 0)) {
-        console.warn("⚠️ n8n kết nối OK nhưng Sheets trả về rỗng!");
-      }
-      
       setLiveData(Array.isArray(data) ? data : [data]);
     } catch (error) {
-      console.error("❌ LỖI KẾT NỐI N8N (GET):", error);
-      if (error.message.includes('CORS') || error.message.includes('Failed to fetch')) {
-        alert("LỖI CORS: Bạn chưa bật 'Enable CORS' trong node Webhook của n8n hoặc chưa bấm Publish!");
-      } else {
-        alert(`Lỗi: ${error.message}`);
-      }
+      console.error("Fetch error:", error);
     } finally {
       setIsFetching(false);
     }
@@ -110,29 +154,17 @@ function App() {
 
   // Analyze and Save to n8n
   const analyzeKeyword = async (keyword) => {
-    if (!N8N_ANALYZE_URL) {
-      alert("Bạn chưa dán Link Webhook POST vào dòng 68!");
-      return;
-    }
+    if (!N8N_ANALYZE_URL) return;
     setIsFetching(true);
-    console.log("🚀 Đang gửi yêu cầu phân tích (POST) cho:", keyword);
     try {
-      const response = await fetch(N8N_ANALYZE_URL, {
+      await fetch(N8N_ANALYZE_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ keyword })
       });
-      
-      if (!response.ok) {
-        throw new Error(`n8n báo lỗi ${response.status}`);
-      }
-      
-      console.log("✅ n8n đã nhận lệnh POST thành công!");
-      alert("Đã gửi yêu cầu phân tích! Hãy kiểm tra Google Sheets.");
-      refreshData();
+      alert("Đã gửi yêu cầu phân tích chuyên sâu cho Jungsung AI!");
     } catch (error) {
-      console.error("❌ LỖI KẾT NỐI N8N (POST):", error);
-      alert("Không thể gửi yêu cầu! Hãy kiểm tra n8n đã bấm 'Listen for test event' hoặc 'Publish' chưa.");
+      console.error("POST error:", error);
     } finally {
       setIsFetching(false);
     }
@@ -149,16 +181,22 @@ function App() {
     setMessages(prev => [...prev, { role: 'user', text: chatInput }]);
     setChatInput('');
 
-    // AI Brain Logic
+    // Jungsung Intelligent Brain Logic
     setTimeout(() => {
-      let response = "Tôi đã ghi nhận vấn đề của bạn. Để tối ưu từ khóa này, chúng ta cần tập trung vào nội dung SEO chuyên sâu.";
+      let response = "Câu hỏi rất hay! Để phát triển Jungsung, chúng ta nên kết hợp giữa triết lý 'Tận tâm' và dữ liệu thị trường thực tế.";
       
-      if (userMsg.includes("tofu") || userMsg.includes("là gì")) {
-        response = `Từ khóa này thuộc giai đoạn ${STRATEGY_BRAIN.TOFU.goal}. Chiến thuật đề xuất: ${STRATEGY_BRAIN.TOFU.content.join(", ")}.`;
+      if (userMsg.includes("ceo") || userMsg.includes("founder") || userMsg.includes("kim")) {
+        response = `CEO của Jungsung là bà ${JUNGSUNG_KNOWLEDGE.brand.ceo}. Bà khởi nghiệp với mong muốn mang lại gia vị an toàn tuyệt đối cho gia đình.`;
+      } else if (userMsg.includes("3 không") || userMsg.includes("triết lý")) {
+        response = `Jungsung cam kết ${JUNGSUNG_KNOWLEDGE.brand.philosophy}. Đây là điểm bán hàng độc nhất (USP) giúp chúng ta cạnh tranh.`;
+      } else if (userMsg.includes("sản phẩm") || userMsg.includes("bán gì")) {
+        response = `Các sản phẩm chủ lực gồm: ${JUNGSUNG_KNOWLEDGE.products.map(p => p.name).join(", ")}. Bạn muốn tôi tư vấn chiến lược cho sản phẩm nào?`;
+      } else if (userMsg.includes("tofu") || userMsg.includes("là gì")) {
+        response = `Giai đoạn ${JUNGSUNG_KNOWLEDGE.strategies.TOFU.goal}: ${JUNGSUNG_KNOWLEDGE.strategies.TOFU.content}. Chiến thuật gợi ý: ${JUNGSUNG_KNOWLEDGE.strategies.TOFU.tactics.join(", ")}.`;
       } else if (userMsg.includes("bofu") || userMsg.includes("mua")) {
-        response = `Đây là "Từ khóa Vàng" (${STRATEGY_BRAIN.BOFU.goal}). Hãy tập trung vào: ${STRATEGY_BRAIN.BOFU.content.join(", ")} để chốt đơn ngay!`;
-      } else if (userMsg.includes("mofu") || userMsg.includes("review")) {
-        response = `Khách hàng đang cân nhắc (${STRATEGY_BRAIN.MOFU.goal}). Bạn nên triển khai: ${STRATEGY_BRAIN.MOFU.content.join(", ")}.`;
+        response = `Giai đoạn ${JUNGSUNG_KNOWLEDGE.strategies.BOFU.goal}: ${JUNGSUNG_KNOWLEDGE.strategies.BOFU.content}. Chạy ngay: ${JUNGSUNG_KNOWLEDGE.strategies.BOFU.tactics.join(", ")}.`;
+      } else if (userMsg.includes("haccp") || userMsg.includes("an toàn")) {
+        response = `Bạn hoàn toàn yên tâm, Jungsung đạt ${JUNGSUNG_KNOWLEDGE.brand.safety}. Đây là bảo chứng mạnh mẽ nhất khi làm Marketing.`;
       }
       
       setMessages(prev => [...prev, { role: 'bot', text: response }]);
@@ -175,7 +213,7 @@ function App() {
           { label: 'BOFU Intent', value: '18', icon: Zap, color: '#f59e0b', trend: '+18%' },
           { label: 'AI Processed', value: '98%', icon: ShieldCheck, color: '#10b981', trend: 'Stable' },
         ].map((stat, i) => (
-          <div key={i} className="stat-card">
+          <div key={i} className="stat-card glass shimmer-bg">
             <div className={`trend-badge ${stat.trend.includes('-') ? 'negative' : ''}`}>{stat.trend}</div>
             <div className="stat-icon-bg" style={{ color: stat.color }}><stat.icon size={24} /></div>
             <p className="stat-label">{stat.label}</p>
@@ -185,7 +223,7 @@ function App() {
       </div>
 
       <div className="grid-2-1">
-        <div className="stat-card">
+        <div className="stat-card glass">
           <div className="card-header">
             <h3>Market Search Volume</h3>
             <button className="header-btn" onClick={refreshData} title="Làm mới dữ liệu từ n8n">
@@ -211,7 +249,7 @@ function App() {
           </div>
         </div>
 
-        <div className="stat-card">
+        <div className="stat-card glass">
           <div className="card-header">
             <h3>Funnel Stages</h3>
             <PieIcon size={18} color="#94a3b8" />
@@ -242,7 +280,7 @@ function App() {
           <button className="btn-secondary" onClick={refreshData}>
             {isFetching ? "Updating..." : "Refresh Live"}
           </button>
-          <button className="btn-primary">Export CSV</button>
+          <button className="btn-primary" onClick={exportToCSV}>Export CSV</button>
         </div>
       </div>
       <table>
@@ -259,7 +297,7 @@ function App() {
         <tbody>
           {(liveData.length > 0 ? liveData : MOCK_KEYWORDS).map((k, index) => (
             <tr key={k.id || index}>
-              <td style={{ fontWeight: 600 }}>{k["Keyword (Từ khóa)"] || k.Keyword || k.keyword}</td>
+              <td style={{ fontWeight: 600 }}>{k["Keyword (Từ khóa)"] || k.keyword || k.Keyword}</td>
               <td>{k.Search_Volume || k.volume || "Checking..."}</td>
               <td>
                 <span className={`diff-badge ${(k.Difficulty || k.difficulty || "low").toLowerCase()}`}>
@@ -278,7 +316,7 @@ function App() {
               <td>
                 <button 
                   className="btn-icon" 
-                  onClick={() => analyzeKeyword(k["Keyword (Từ khóa)"] || k.keyword)}
+                  onClick={() => analyzeKeyword(k["Keyword (Từ khóa)"] || k.keyword || k.Keyword)}
                   title="Phân tích & Ghi vào Sheets"
                 >
                   <Bot size={16} color={k.Status === 'Done' ? '#10b981' : '#3b82f6'} />
@@ -288,6 +326,68 @@ function App() {
           ))}
         </tbody>
       </table>
+    </div>
+  );
+
+  const renderStrategy = () => (
+    <div className="strategy-grid fade-in">
+      {Object.entries(JUNGSUNG_KNOWLEDGE.strategies).map(([key, value]) => (
+        <div key={key} className="stat-card glass strategy-card">
+          <div className="strategy-header">
+            <span className={`funnel-pill ${key.toLowerCase()}`}>{key}</span>
+            <Target size={18} color="#d4af37" />
+          </div>
+          <h3 className="strategy-title">{value.goal}</h3>
+          <p className="strategy-desc">{value.content}</p>
+          <div className="tactics-list">
+            {value.tactics.map((t, i) => (
+              <div key={i} className="tactic-item">
+                <CheckCircle2 size={14} color="#10b981" />
+                <span>{t}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+  const renderCampaign = () => (
+    <div className="campaign-list fade-in">
+      <div className="stat-card glass">
+        <div className="card-header">
+          <h3>Active Content Campaigns</h3>
+          <button className="btn-primary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.7rem' }}>+ New Campaign</button>
+        </div>
+        <div className="campaign-table-wrapper">
+          <table className="campaign-table">
+            <thead>
+              <tr>
+                <th>Campaign Name</th>
+                <th>Channel</th>
+                <th>Status</th>
+                <th>Performance</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                { name: "Jungsung x Mẹ Bỉm sữa Review", channel: "TikTok", status: "Running", perf: "High", color: "#3b82f6" },
+                { name: "Sạch lành chuẩn Hàn (Branding)", channel: "Facebook", status: "Draft", perf: "-", color: "#94a3b8" },
+                { name: "Google Ads - Keywords BOFU", channel: "Search", status: "Running", perf: "Medium", color: "#10b981" },
+              ].map((c, i) => (
+                <tr key={i}>
+                  <td style={{ fontWeight: 600 }}>{c.name}</td>
+                  <td><span className="channel-pill">{c.channel}</span></td>
+                  <td><span className={`status-pill ${c.status.toLowerCase()}`}>{c.status}</span></td>
+                  <td style={{ color: '#10b981', fontWeight: 800 }}>{c.perf}</td>
+                  <td><button className="header-btn"><ArrowUpRight size={14} /></button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 
@@ -349,8 +449,8 @@ function App() {
 
         {activeTab === 'dashboard' && renderDashboard()}
         {activeTab === 'research' && renderResearch()}
-        {activeTab === 'strategy' && renderPlaceholder('Marketing Strategy')}
-        {activeTab === 'campaign' && renderPlaceholder('Content Campaign')}
+        {activeTab === 'strategy' && renderStrategy()}
+        {activeTab === 'campaign' && renderCampaign()}
         
       </main>
 
