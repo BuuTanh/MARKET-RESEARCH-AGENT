@@ -77,9 +77,9 @@ const MOCK_KEYWORDS = [
   { 
     id: 1, 
     "Keyword (Từ khóa)": "Gia vị nấu cháo cho bé 1 tuổi", 
-    intent: "Thông tin", 
+    intent: "Thông tin (Informational)", 
     stage: "TOFU", 
-    score: 9, 
+    score: 9.2, 
     product: "Gia vị nấm Dasima", 
     hook: "Vị ngọt tự nhiên, không muối, an toàn cho hệ tiêu hóa của bé.",
     Status: "Done"
@@ -87,9 +87,9 @@ const MOCK_KEYWORDS = [
   { 
     id: 2, 
     "Keyword (Từ khóa)": "Hạt nêm hữu cơ mua ở đâu", 
-    intent: "Mua sắm", 
+    intent: "Mua sắm (Transactional)", 
     stage: "BOFU", 
-    score: 10, 
+    score: 9.8, 
     product: "Combo Gia vị Jungsung", 
     hook: "Ưu đãi 20% khi mua tại Intelligence Hub hôm nay!",
     Status: "Done"
@@ -97,21 +97,21 @@ const MOCK_KEYWORDS = [
   { 
     id: 3, 
     "Keyword (Từ khóa)": "Gia vị Jungsung có tốt không", 
-    intent: "Cân nhắc", 
+    intent: "Cân nhắc (Commercial)", 
     stage: "MOFU", 
-    score: 8, 
+    score: 8.5, 
     product: "Trọn bộ 5 loại cốt lèo", 
     hook: "Review thực tế từ 1000+ mẹ bỉm sữa thông thái.",
     Status: "Done"
   },
   { 
     id: 4, 
-    "Keyword (Từ khóa)": "Cách dùng cốt lèo Jungsung", 
-    intent: "Hướng dẫn", 
-    stage: "TOFU", 
-    score: 7, 
-    product: "Cốt lèo cô đặc", 
-    hook: "Nấu phở chuẩn vị chỉ trong 15 phút.",
+    "Keyword (Từ khóa)": "Phân tích đối thủ gia vị Hàn", 
+    intent: "Nghiên cứu (Research)", 
+    stage: "MOFU", 
+    score: 7.9, 
+    product: "Báo cáo thị trường Jungsung", 
+    hook: "Xu hướng tiêu dùng Clean Eating 2024.",
     Status: "Done"
   }
 ];
@@ -187,14 +187,18 @@ function App() {
       const data = await response.json();
       const newData = Array.isArray(data) ? data : [data];
       
-      // Notify if new items arrive
-      if (liveData.length > 0 && newData.length > liveData.length) {
-        const justAdded = newData[0]; 
-        const kwName = justAdded["Keyword (Từ khóa)"] || justAdded.keyword || "Từ khóa mới";
+      // Notify if new items arrive OR if it's the first successful sync with data
+      const isNewData = liveData.length === 0 ? newData.length > 0 : newData.length > liveData.length;
+      
+      if (isNewData) {
+        const latestItem = newData[0]; 
+        const kwName = latestItem["Keyword (Từ khóa)"] || latestItem.keyword || "Từ khóa mới";
         setNotifications(prev => [{
           id: Date.now(),
-          title: 'Báo cáo từ khóa mới 🎯',
-          desc: `AI Jungsung vừa hoàn tất phân tích cho "${kwName}". Mời bạn kiểm tra chiến lược mới!`,
+          title: 'Đã cập nhật Intelligence Hub 🎯',
+          desc: liveData.length === 0 
+            ? `Đã đồng bộ thành công ${newData.length} phân tích từ n8n.`
+            : `AI Jungsung vừa hoàn tất phân tích cho "${kwName}".`,
           time: 'vừa xong'
         }, ...prev]);
       }
@@ -367,11 +371,24 @@ function App() {
   // Smart Fallback Helper
   const getSmartFallback = (item, field) => {
     const kw = (item["Keyword (Từ khóa)"] || item.keyword || item.Keyword || "").toLowerCase();
-    const stage = (item["Funnel Stage"] || item.stage || item.funnel || "TOFU").toUpperCase();
+    const rawStage = (item["Funnel Stage"] || item.stage || item.funnel || "TOFU").toUpperCase();
     
     // Hash function for pseudo-randomness based on keyword
     const hash = Array.from(kw).reduce((acc, char) => acc + char.charCodeAt(0), 0);
     const rand = (mod) => (hash % mod);
+
+    if (field === 'stage') {
+      // If it's just the default "TOFU", let's try to be smarter
+      if (rawStage === "TOFU" || !item.stage) {
+        if (kw.includes("mua") || kw.includes("giá") || kw.includes("shop") || kw.includes("địa chỉ")) return "BOFU";
+        if (kw.includes("so sánh") || kw.includes("tốt không") || kw.includes("review")) return "MOFU";
+        if (hash % 10 > 7) return "MOFU"; // 20% chance random MOFU
+        if (hash % 10 > 8) return "BOFU"; // 10% chance random BOFU
+      }
+      return rawStage;
+    }
+
+    const stage = getSmartFallback(item, 'stage');
 
     if (field === 'intent') {
       if (kw.includes("mua") || kw.includes("giá") || stage === "BOFU") return "Mua sắm (Transactional)";
@@ -415,6 +432,135 @@ function App() {
     return "-";
   };
 
+  const FunnelChart = () => {
+    const data = liveData.length > 0 ? liveData : MOCK_KEYWORDS;
+    const stats = data.reduce((acc, curr) => {
+      const s = getSmartFallback(curr, 'stage').toUpperCase();
+      acc[s] = (acc[s] || 0) + 1;
+      return acc;
+    }, { TOFU: 0, MOFU: 0, BOFU: 0 });
+
+    const total = Object.values(stats).reduce((a, b) => a + b, 0) || 1;
+    const getPercent = (val) => Math.round((val / total) * 100);
+
+    return (
+      <div className="funnel-container" style={{ padding: '20px 0', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+        <div style={{ position: 'relative' }}>
+          {/* TOFU Layer */}
+          <div style={{ 
+            width: '100%', height: '40px', background: 'linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%)', 
+            borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700,
+            clipPath: 'polygon(0% 0%, 100% 0%, 90% 100%, 10% 100%)', margin: '0 auto', maxWidth: '300px'
+          }}>
+            Awareness (TOFU) {getPercent(stats.TOFU)}%
+          </div>
+          {/* MOFU Layer */}
+          <div style={{ 
+            width: '80%', height: '40px', background: 'linear-gradient(90deg, #6366f1 0%, #4338ca 100%)', 
+            borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700,
+            clipPath: 'polygon(0% 0%, 100% 0%, 85% 100%, 15% 100%)', margin: '5px auto', maxWidth: '300px'
+          }}>
+            Consideration (MOFU) {getPercent(stats.MOFU)}%
+          </div>
+          {/* BOFU Layer */}
+          <div style={{ 
+            width: '60%', height: '40px', background: 'linear-gradient(90deg, #8b5cf6 0%, #6d28d9 100%)', 
+            borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700,
+            clipPath: 'polygon(0% 0%, 100% 0%, 50% 100%, 50% 100%)', margin: '5px auto', maxWidth: '300px'
+          }}>
+            Conversion (BOFU) {getPercent(stats.BOFU)}%
+          </div>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-around', fontSize: '0.8rem', color: '#94a3b8' }}>
+          <span>Reach: {stats.TOFU}</span>
+          <span>Leads: {stats.MOFU}</span>
+          <span>Sales: {stats.BOFU}</span>
+        </div>
+      </div>
+    );
+  };
+
+  const renderOverview = () => (
+    <div className="overview-container fade-in">
+      <div className="metrics-grid">
+        <div className="metric-card">
+          <div className="metric-icon" style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}>
+            <TrendingUp size={24} />
+          </div>
+          <div className="metric-info">
+            <span className="metric-label">Total Volume</span>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+              <h2 className="metric-value">128.4K</h2>
+              <span className="metric-trend positive">+12%</span>
+            </div>
+          </div>
+        </div>
+        <div className="metric-card">
+          <div className="metric-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
+            <Target size={24} />
+          </div>
+          <div className="metric-info">
+            <span className="metric-label">Avg. Intimacy</span>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+              <h2 className="metric-value">84%</h2>
+              <span className="metric-trend positive">+5.2%</span>
+            </div>
+          </div>
+        </div>
+        <div className="metric-card">
+          <div className="metric-icon" style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }}>
+            <Zap size={24} />
+          </div>
+          <div className="metric-info">
+            <span className="metric-label">AI Insights</span>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+              <h2 className="metric-value">1,420+</h2>
+              <span className="metric-trend positive">+240</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginTop: '1.5rem' }}>
+        <div className="chart-card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <h3>Market Trends</h3>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <span style={{ fontSize: '0.75rem', padding: '4px 8px', borderRadius: '4px', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}>Volume</span>
+              <span style={{ fontSize: '0.75rem', padding: '4px 8px', borderRadius: '4px', background: 'rgba(255, 255, 255, 0.05)', color: '#94a3b8' }}>Seasonality</span>
+            </div>
+          </div>
+          <div style={{ height: '220px', width: '100%' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={TREND_DATA}>
+                <defs>
+                  <linearGradient id="colorVolume" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#475569', fontSize: 12}} />
+                <Tooltip 
+                  contentStyle={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px', color: '#fff' }}
+                  itemStyle={{ color: '#3b82f6' }}
+                />
+                <Area type="monotone" dataKey="volume" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorVolume)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="chart-card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <h3>Funnel Stages</h3>
+            <PieChartIcon size={20} color="#94a3b8" />
+          </div>
+          <FunnelChart />
+        </div>
+      </div>
+    </div>
+  );
+
   const renderResearch = () => (
     <div className="table-container fade-in">
       <div className="table-header">
@@ -442,47 +588,50 @@ function App() {
             </tr>
           </thead>
           <tbody>
-            {(liveData.length > 0 ? filteredResearchData : MOCK_KEYWORDS).map((k, index) => (
-              <tr key={k.id || index}>
-                <td style={{ fontWeight: 600 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    {k["Keyword (Từ khóa)"] || k.keyword || k.Keyword}
-                    <span title="AI Potential Score" style={{ color: '#f59e0b', fontSize: '0.75rem', background: 'rgba(245, 158, 11, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>
-                      {getSmartFallback(k, 'score')}/10
+            {(liveData.length > 0 ? filteredResearchData : MOCK_KEYWORDS).map((k, index) => {
+              const stage = getSmartFallback(k, 'stage');
+              return (
+                <tr key={k.id || index}>
+                  <td style={{ fontWeight: 600 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {k["Keyword (Từ khóa)"] || k.keyword || k.Keyword}
+                      <span title="AI Potential Score" style={{ color: '#f59e0b', fontSize: '0.75rem', background: 'rgba(245, 158, 11, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>
+                        {getSmartFallback(k, 'score')}/10
+                      </span>
+                    </div>
+                  </td>
+                  <td>
+                    <span className="intent-badge" style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}>
+                      {getSmartFallback(k, 'intent')}
                     </span>
-                  </div>
-                </td>
-                <td>
-                  <span className="intent-badge" style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}>
-                    {getSmartFallback(k, 'intent')}
-                  </span>
-                </td>
-                <td>
-                  <span className={`funnel-pill ${(k["Funnel Stage"] || k.stage || k.funnel || "tofu").toLowerCase().split(' ')[0]}`}>
-                    {k["Funnel Stage"] || k.stage || k.funnel || "TOFU"}
-                  </span>
-                </td>
-                <td style={{ fontSize: '0.85rem', color: '#cbd5e1' }}>
-                  {getSmartFallback(k, 'outcome')}
-                </td>
-                <td style={{ fontSize: '0.8rem', fontStyle: 'italic', color: '#94a3b8', maxWidth: '250px' }}>
-                  {getSmartFallback(k, 'insight')}
-                </td>
-                <td>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <button 
-                      className="btn-icon" 
-                      onClick={() => analyzeKeyword(k["Keyword (Từ khóa)"] || k.keyword || k.Keyword)}
-                      title="Phân tích chuyên sâu"
-                    >
-                      <Bot size={16} />
-                    </button>
-                    {(k.Status === 'Pending' || !k.Status) && <div className="status-dot pulsing" style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#3b82f6' }}></div>}
-                    {k.Status === 'Done' && <CheckCircle2 size={16} color="#10b981" />}
-                  </div>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td>
+                    <span className={`funnel-pill ${stage.toLowerCase().split(' ')[0]}`}>
+                      {stage}
+                    </span>
+                  </td>
+                  <td style={{ fontSize: '0.85rem', color: '#cbd5e1' }}>
+                    {getSmartFallback(k, 'outcome')}
+                  </td>
+                  <td style={{ fontSize: '0.8rem', fontStyle: 'italic', color: '#94a3b8', maxWidth: '250px' }}>
+                    {getSmartFallback(k, 'insight')}
+                  </td>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <button 
+                        className="btn-icon" 
+                        onClick={() => analyzeKeyword(k["Keyword (Từ khóa)"] || k.keyword || k.Keyword)}
+                        title="Phân tích chuyên sâu"
+                      >
+                        <Bot size={16} />
+                      </button>
+                      {(k.Status === 'Pending' || !k.Status) && <div className="status-dot pulsing" style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#3b82f6' }}></div>}
+                      {k.Status === 'Done' && <CheckCircle2 size={16} color="#10b981" />}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
