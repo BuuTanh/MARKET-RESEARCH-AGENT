@@ -360,38 +360,56 @@ function App() {
     const total = Object.values(stats).reduce((a, b) => a + b, 0) || 1;
     const getPercent = (val) => Math.round((val / total) * 100);
 
+    const layers = [
+      { id: 'TOFU', label: 'Awareness (TOFU)', val: stats.TOFU, color: 'linear-gradient(90deg, #3b82f6 0%, #2563eb 100%)', width: '100%', clip: 'polygon(0% 0%, 100% 0%, 92% 100%, 8% 100%)' },
+      { id: 'MOFU', label: 'Consideration (MOFU)', val: stats.MOFU, color: 'linear-gradient(90deg, #6366f1 0%, #4f46e5 100%)', width: '85%', clip: 'polygon(0% 0%, 100% 0%, 88% 100%, 12% 100%)' },
+      { id: 'BOFU', label: 'Conversion (BOFU)', val: stats.BOFU, color: 'linear-gradient(90deg, #8b5cf6 0%, #7c3aed 100%)', width: '70%', clip: 'polygon(0% 0%, 100% 0%, 80% 100%, 20% 100%)' }
+    ];
+
     return (
-      <div className="funnel-container" style={{ padding: '20px 0', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-        <div style={{ position: 'relative' }}>
-          {/* TOFU Layer */}
-          <div style={{ 
-            width: '100%', height: '40px', background: 'linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%)', 
-            borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700,
-            clipPath: 'polygon(0% 0%, 100% 0%, 90% 100%, 10% 100%)', margin: '0 auto', maxWidth: '300px'
-          }}>
-            Awareness (TOFU) {getPercent(stats.TOFU)}%
+      <div className="funnel-container" style={{ padding: '10px 0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        {layers.map((layer, i) => (
+          <div key={layer.id} style={{ position: 'relative', width: '100%', display: 'flex', justifyContent: 'center' }}>
+            <div style={{ 
+              width: layer.width, 
+              height: '52px', 
+              background: layer.color,
+              clipPath: layer.clip,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              transition: 'all 0.3s ease'
+            }}>
+              <span style={{ fontSize: '0.85rem', fontWeight: 800, textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>{layer.label}</span>
+              <span style={{ fontSize: '1.1rem', fontWeight: 900 }}>{getPercent(layer.val)}%</span>
+            </div>
           </div>
-          {/* MOFU Layer */}
-          <div style={{ 
-            width: '80%', height: '40px', background: 'linear-gradient(90deg, #6366f1 0%, #4338ca 100%)', 
-            borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700,
-            clipPath: 'polygon(0% 0%, 100% 0%, 85% 100%, 15% 100%)', margin: '5px auto', maxWidth: '300px'
-          }}>
-            Consideration (MOFU) {getPercent(stats.MOFU)}%
+        ))}
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-around', 
+          marginTop: '15px', 
+          paddingTop: '15px', 
+          borderTop: '1px solid rgba(255,255,255,0.05)',
+          fontSize: '0.8rem',
+          fontWeight: 600
+        }}>
+          <div style={{ textAlign: 'center' }}>
+            <p style={{ color: '#94a3b8', marginBottom: '4px' }}>Market Reach</p>
+            <p style={{ color: '#3b82f6', fontSize: '1rem' }}>{stats.TOFU}</p>
           </div>
-          {/* BOFU Layer */}
-          <div style={{ 
-            width: '60%', height: '40px', background: 'linear-gradient(90deg, #8b5cf6 0%, #6d28d9 100%)', 
-            borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700,
-            clipPath: 'polygon(0% 0%, 100% 0%, 50% 100%, 50% 100%)', margin: '5px auto', maxWidth: '300px'
-          }}>
-            Conversion (BOFU) {getPercent(stats.BOFU)}%
+          <div style={{ textAlign: 'center' }}>
+            <p style={{ color: '#94a3b8', marginBottom: '4px' }}>Warm Leads</p>
+            <p style={{ color: '#6366f1', fontSize: '1rem' }}>{stats.MOFU}</p>
           </div>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-around', fontSize: '0.8rem', color: '#94a3b8' }}>
-          <span>Reach: {stats.TOFU}</span>
-          <span>Leads: {stats.MOFU}</span>
-          <span>Sales: {stats.BOFU}</span>
+          <div style={{ textAlign: 'center' }}>
+            <p style={{ color: '#94a3b8', marginBottom: '4px' }}>Conversions</p>
+            <p style={{ color: '#8b5cf6', fontSize: '1rem' }}>{stats.BOFU}</p>
+          </div>
         </div>
       </div>
     );
