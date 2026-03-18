@@ -176,12 +176,20 @@ function App() {
       let bestMatch = null;
       let maxKeywordsMatched = 0;
 
-      // Scan Knowledge Base for matches
-      JUNGSUNG_DB.knowledge_base.forEach(entry => {
+      // Combine all knowledge sectors for scanning
+      const allKnowledge = [
+        ...JUNGSUNG_DB.knowledge_base,
+        ...(JUNGSUNG_DB.knowledge_base_system || [])
+      ];
+
+      // Scan all sectors for the best match
+      allKnowledge.forEach(entry => {
         let matchCount = 0;
         entry.keywords.forEach(kw => {
+          // Case-insensitive inclusion check
           if (userMsg.includes(kw.toLowerCase())) {
-            matchCount++;
+            // Weighted match: longer keywords count more
+            matchCount += kw.length > 5 ? 2 : 1;
           }
         });
 
@@ -196,7 +204,7 @@ function App() {
       if (bestMatch && maxKeywordsMatched > 0) {
         response = bestMatch.answer;
       } else {
-        // Fallback strategies check
+        // Fallback or contextual help
         if (userMsg.includes("tofu")) {
           response = `Giai đoạn ${JUNGSUNG_KNOWLEDGE.strategies.TOFU.goal}: ${JUNGSUNG_KNOWLEDGE.strategies.TOFU.content}.`;
         } else if (userMsg.includes("mofu")) {
@@ -204,12 +212,12 @@ function App() {
         } else if (userMsg.includes("bofu")) {
           response = `Giai đoạn ${JUNGSUNG_KNOWLEDGE.strategies.BOFU.goal}: ${JUNGSUNG_KNOWLEDGE.strategies.BOFU.content}.`;
         } else {
-          response = "Tôi ghi nhận yêu cầu của bạn. Thông thạo nhất về Jungsung vẫn là các chủ đề: Ý nghĩa thương hiệu, Thành phần tự nhiên, Công nghệ nghiền siêu mịn và các dòng sản phẩm của chúng tôi. Bạn có thể hỏi cụ thể hơn không?";
+          response = "Tôi là Jungsung AI Expert. Bạn có thể hỏi về Triết lý thương hiệu, Thành phần nguyên liệu (Bột nấm, Tảo bẹ...), Công nghệ nghiền siêu mịn, hoặc các chỉ số Dashboard (Overview/Research/Strategy). Bạn cần tôi giải đáp phần nào?";
         }
       }
       
       setMessages(prev => [...prev, { role: 'bot', text: response }]);
-    }, 800);
+    }, 600);
   };
 
   /* --- Render Functions --- */
