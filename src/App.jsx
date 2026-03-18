@@ -74,11 +74,46 @@ const STRATEGY_BRAIN = {
 };
 
 const MOCK_KEYWORDS = [
-  { id: 1, keyword: "Gia vị nấu cháo cho bé 1 tuổi", intent: "Informational", funnel: "TOFU", score: 8.5, volume: "12,500", difficulty: "Low", trend: "+15%" },
-  { id: 2, keyword: "Hạt nêm tự nhiên mua ở đâu", intent: "Transactional", funnel: "BOFU", score: 9.2, volume: "5,400", difficulty: "High", trend: "+28%" },
-  { id: 3, keyword: "Cách nấu phở bò chuẩn vị", intent: "Informational", funnel: "TOFU", score: 7.8, volume: "45,000", difficulty: "Medium", trend: "-5%" },
-  { id: 4, keyword: "Gia vị Jungsung review", intent: "Commercial", funnel: "MOFU", score: 8.9, volume: "2,100", difficulty: "Low", trend: "+42%" },
-  { id: 5, keyword: "Tương ớt cô đặc giá sỉ", intent: "Transactional", funnel: "BOFU", score: 9.5, volume: "1,800", difficulty: "Medium", trend: "+12%" },
+  { 
+    id: 1, 
+    "Keyword (Từ khóa)": "Gia vị nấu cháo cho bé 1 tuổi", 
+    intent: "Thông tin", 
+    stage: "TOFU", 
+    score: 9, 
+    product: "Gia vị nấm Dasima", 
+    hook: "Vị ngọt tự nhiên, không muối, an toàn cho hệ tiêu hóa của bé.",
+    Status: "Done"
+  },
+  { 
+    id: 2, 
+    "Keyword (Từ khóa)": "Hạt nêm hữu cơ mua ở đâu", 
+    intent: "Mua sắm", 
+    stage: "BOFU", 
+    score: 10, 
+    product: "Combo Gia vị Jungsung", 
+    hook: "Ưu đãi 20% khi mua tại Intelligence Hub hôm nay!",
+    Status: "Done"
+  },
+  { 
+    id: 3, 
+    "Keyword (Từ khóa)": "Gia vị Jungsung có tốt không", 
+    intent: "Cân nhắc", 
+    stage: "MOFU", 
+    score: 8, 
+    product: "Trọn bộ 5 loại cốt lèo", 
+    hook: "Review thực tế từ 1000+ mẹ bỉm sữa thông thái.",
+    Status: "Done"
+  },
+  { 
+    id: 4, 
+    "Keyword (Từ khóa)": "Cách dùng cốt lèo Jungsung", 
+    intent: "Hướng dẫn", 
+    stage: "TOFU", 
+    score: 7, 
+    product: "Cốt lèo cô đặc", 
+    hook: "Nấu phở chuẩn vị chỉ trong 15 phút.",
+    Status: "Done"
+  }
 ];
 
 const TREND_DATA = [
@@ -102,10 +137,9 @@ function App() {
   const [isFetching, setIsFetching] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
-  const [notifications] = useState([
-    { id: 1, title: 'New Keyword Detected', desc: 'Added "Gia vị hữu cơ cho bé" to Sheets.', time: '2m ago' },
-    { id: 2, title: 'Analysis Complete', desc: 'n8n finished processing 5 keywords.', time: '1h ago' },
-    { id: 3, title: 'Email Sent', desc: 'Strategy report sent to admin@jungsung.com', time: '3h ago' }
+  const [notifications, setNotifications] = useState([
+    { id: 1, title: 'Hệ thống đã sẵn sàng', desc: 'Kết nối n8n Intelligence Hub thành công.', time: 'vừa xong' },
+    { id: 2, title: 'Email Automation', desc: 'Mẫu email Premium đã được cấu hình.', time: '10p trước' }
   ]);
   const [selectedCampaign, setSelectedCampaign] = useState(null);
   const [showNewCampaignModal, setShowNewCampaignModal] = useState(false);
@@ -119,15 +153,17 @@ function App() {
   // Export CSV Logic
   const exportToCSV = () => {
     const data = liveData.length > 0 ? liveData : MOCK_KEYWORDS;
-    const headers = ["Keyword", "Search Volume", "Difficulty", "Intent", "Trend"];
+    const headers = ["Keyword (Từ khóa)", "Intent", "Funnel Stage", "Score", "Recommended Product", "Marketing Hook", "Status"];
     const csvRows = [
       headers.join(","),
       ...data.map(row => [
-        row["Keyword (Từ khóa)"] || row.keyword || row.Keyword,
-        row.Search_Volume || row.volume || 0,
-        row.Difficulty || row.difficulty || "Low",
-        row.Intent || row.intent || "Awareness",
-        row.Trend || row.trend || "0%"
+        `"${row["Keyword (Từ khóa)"] || row.keyword || row.Keyword}"`,
+        `"${row.Intent || row.intent || "Awareness"}"`,
+        `"${row["Funnel Stage"] || row.stage || row.funnel || "TOFU"}"`,
+        `"${row.score || row.potential_score || "0"}"`,
+        `"${row.Content_Type || row.product || row["Recommended Product"] || "-"}"`,
+        `"${row.Title_Idea || row.hook || row.Marketing_Hook || "-"}"`,
+        `"${row.Status || "Pending"}"`
       ].join(","))
     ];
     
@@ -149,7 +185,19 @@ function App() {
     try {
       const response = await fetch(N8N_WEBHOOK_URL);
       const data = await response.json();
-      setLiveData(Array.isArray(data) ? data : [data]);
+      const newData = Array.isArray(data) ? data : [data];
+      
+      // Notify if new items arrive
+      if (liveData.length > 0 && newData.length > liveData.length) {
+        setNotifications(prev => [{
+          id: Date.now(),
+          title: 'Dữ liệu mới!',
+          desc: `Phát hiện ${newData.length - liveData.length} từ khóa mới từ Intelligence Hub.`,
+          time: 'vừa xong'
+        }, ...prev]);
+      }
+      
+      setLiveData(newData);
     } catch (error) {
       console.error("Fetch error:", error);
     } finally {
@@ -328,49 +376,65 @@ function App() {
           <button className="btn-primary" onClick={exportToCSV}>Export CSV</button>
         </div>
       </div>
-      <table>
-        <thead>
-          <tr>
-            <th>Keyword (Từ khóa)</th>
-            <th>Intent</th>
-            <th>Funnel Stage</th>
-            <th>Recommended Product</th>
-            <th>Marketing Hook</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredResearchData.map((k, index) => (
-            <tr key={k.id || index}>
-              <td style={{ fontWeight: 600 }}>{k["Keyword (Từ khóa)"] || k.keyword || k.Keyword}</td>
-              <td>
-                <span className="intent-badge" style={{ 
-                  background: (k.Intent || k.intent) === 'Transactional' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(59, 130, 246, 0.1)',
-                  color: (k.Intent || k.intent) === 'Transactional' ? '#10b981' : '#3b82f6'
-                }}>{k.Intent || k.intent || "Pending..."}</span>
-              </td>
-              <td>
-                <span className={`funnel-pill ${(k["Funnel Stage"] || k.funnel || "tofu").toLowerCase().split(' ')[0]}`}>
-                  {k["Funnel Stage"] || k.funnel || "Pending..."}
-                </span>
-              </td>
-              <td style={{ fontSize: '0.85rem', color: '#cbd5e1' }}>{k["Recommended Product"] || k.product || "-"}</td>
-              <td style={{ fontSize: '0.8rem', fontStyle: 'italic', color: '#94a3b8' }}>
-                {k["Marketing Hook"] || k.Marketing_Hook || "-"}
-              </td>
-              <td>
-                <button 
-                  className="btn-icon" 
-                  onClick={() => analyzeKeyword(k["Keyword (Từ khóa)"] || k.keyword || k.Keyword)}
-                  title="Phân tích chuyên sâu"
-                >
-                  <Bot size={16} color={k.Status === 'Done' ? '#10b981' : '#3b82f6'} />
-                </button>
-              </td>
+      <div className="table-scroll-wrapper" style={{ overflowX: 'auto' }}>
+        <table>
+          <thead>
+            <tr>
+              <th>Keyword (Từ khóa)</th>
+              <th>Intent</th>
+              <th>Stage</th>
+              <th>Strategy (Product/Type)</th>
+              <th>Creative (Hook/Title)</th>
+              <th>Action</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {(liveData.length > 0 ? filteredResearchData : MOCK_KEYWORDS).map((k, index) => (
+              <tr key={k.id || index}>
+                <td style={{ fontWeight: 600 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {k["Keyword (Từ khóa)"] || k.keyword || k.Keyword}
+                    {(k.score || k.potential_score) && (
+                      <span title="AI Potential Score" style={{ color: '#f59e0b', fontSize: '0.75rem', background: 'rgba(245, 158, 11, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>
+                        {k.score || k.potential_score}/10
+                      </span>
+                    )}
+                  </div>
+                </td>
+                <td>
+                  <span className="intent-badge" style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}>
+                    {k.Intent || k.intent || "Checking..." }
+                  </span>
+                </td>
+                <td>
+                  <span className={`funnel-pill ${(k["Funnel Stage"] || k.stage || k.funnel || "tofu").toLowerCase().split(' ')[0]}`}>
+                    {k["Funnel Stage"] || k.stage || k.funnel || "TOFU"}
+                  </span>
+                </td>
+                <td style={{ fontSize: '0.85rem', color: '#cbd5e1' }}>
+                  {k.Content_Type || k.product || k["Recommended Product"] || "-"}
+                </td>
+                <td style={{ fontSize: '0.8rem', fontStyle: 'italic', color: '#94a3b8', maxWidth: '250px' }}>
+                  {k.Title_Idea || k.hook || k.marketing_hook || k["Marketing Hook"] || "-"}
+                </td>
+                <td>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <button 
+                      className="btn-icon" 
+                      onClick={() => analyzeKeyword(k["Keyword (Từ khóa)"] || k.keyword || k.Keyword)}
+                      title="Phân tích chuyên sâu"
+                    >
+                      <Bot size={16} />
+                    </button>
+                    {(k.Status === 'Pending' || !k.Status) && <div className="status-dot pulsing" style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#3b82f6' }}></div>}
+                    {k.Status === 'Done' && <CheckCircle2 size={16} color="#10b981" />}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 
