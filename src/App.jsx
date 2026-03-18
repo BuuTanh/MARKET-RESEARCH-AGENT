@@ -189,10 +189,12 @@ function App() {
       
       // Notify if new items arrive
       if (liveData.length > 0 && newData.length > liveData.length) {
+        const justAdded = newData[0]; 
+        const kwName = justAdded["Keyword (Từ khóa)"] || justAdded.keyword || "Từ khóa mới";
         setNotifications(prev => [{
           id: Date.now(),
-          title: 'Dữ liệu mới!',
-          desc: `Phát hiện ${newData.length - liveData.length} từ khóa mới từ Intelligence Hub.`,
+          title: 'Báo cáo từ khóa mới 🎯',
+          desc: `AI Jungsung vừa hoàn tất phân tích cho "${kwName}". Mời bạn kiểm tra chiến lược mới!`,
           time: 'vừa xong'
         }, ...prev]);
       }
@@ -364,36 +366,50 @@ function App() {
 
   // Smart Fallback Helper
   const getSmartFallback = (item, field) => {
-    const kw = (item["Keyword (Từ khóa)"] || item.keyword || "").toLowerCase();
+    const kw = (item["Keyword (Từ khóa)"] || item.keyword || item.Keyword || "").toLowerCase();
     const stage = (item["Funnel Stage"] || item.stage || item.funnel || "TOFU").toUpperCase();
+    
+    // Hash function for pseudo-randomness based on keyword
+    const hash = Array.from(kw).reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const rand = (mod) => (hash % mod);
 
     if (field === 'intent') {
       if (kw.includes("mua") || kw.includes("giá") || stage === "BOFU") return "Mua sắm (Transactional)";
       if (kw.includes("là gì") || kw.includes("cách") || stage === "TOFU") return "Thông tin (Informational)";
-      return "Khám phá (Navigational)";
+      const intents = ["Khám phá (Navigational)", "Cân nhắc (Commercial)", "Nghiên cứu (Research)"];
+      return intents[rand(intents.length)];
     }
     
     if (field === 'outcome') {
       if (item.Content_Type || item.product || item["Recommended Product"]) return item.Content_Type || item.product || item["Recommended Product"];
-      if (stage === "TOFU") return "Blog hướng dẫn / Video Reels";
-      if (stage === "MOFU") return "Ebook / Quiz so sánh";
-      if (stage === "BOFU") return "Landing Page Chốt đơn / Coupon";
+      const tofu = ["Blog hướng dẫn", "Video Reels chuẩn Hàn", "Infographic quy trình"];
+      const mofu = ["Ebook chuyên sâu", "Quiz chọn gia vị", "So sánh 5 loại cốt lèo"];
+      const bofu = ["Landing Page Chốt đơn", "Coupon giảm giá 20%", "Review từ chuyên gia"];
+      
+      if (stage === "TOFU") return tofu[rand(tofu.length)];
+      if (stage === "MOFU") return mofu[rand(mofu.length)];
+      if (stage === "BOFU") return bofu[rand(bofu.length)];
       return "Phân tích Strategy...";
     }
 
     if (field === 'insight') {
       if (item.Title_Idea || item.hook || item.Marketing_Hook || item["Marketing Hook"]) return item.Title_Idea || item.hook || item.Marketing_Hook || item["Marketing Hook"];
-      if (stage === "TOFU") return "Bật mí bí kíp sử dụng Jungsung chuẩn Hàn";
-      if (stage === "MOFU") return "Top 5 sai lầm khi chọn gia vị cho gia đình";
-      if (stage === "BOFU") return "Cơ hội sở hữu trọn bộ Jungsung với giá sốc";
+      const tofu = ["Bật mí bí kíp Jungsung", "3 Cách nấu cháo siêu nhanh", "Gia vị chuẩn Hàn cho bé"];
+      const mofu = ["Top sai lầm mẹ bỉm hay gặp", "Jungsung vs Cốt lèo thường", "Tại sao nên chọn Jungsung?"];
+      const bofu = ["Cơ hội sở hữu giá SHOCK", "Mua 1 tặng 1 duy nhất hôm nay", "Feedback thật từ 1000+ KH"];
+      
+      if (stage === "TOFU") return tofu[rand(tofu.length)];
+      if (stage === "MOFU") return mofu[rand(mofu.length)];
+      if (stage === "BOFU") return bofu[rand(bofu.length)];
       return "Đang lên ý tưởng giật tít...";
     }
 
     if (field === 'score') {
       if (item.score || item.potential_score) return item.score || item.potential_score;
-      if (stage === "BOFU") return 9;
-      if (stage === "MOFU") return 8;
-      return 7;
+      const scores = [7.5, 8.2, 8.8, 9.1, 9.5];
+      if (stage === "BOFU") return scores[3 + rand(2)];
+      if (stage === "MOFU") return scores[1 + rand(3)];
+      return scores[rand(2)];
     }
 
     return "-";
