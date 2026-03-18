@@ -174,34 +174,47 @@ function App() {
     // --- Advanced AI Scanning & Response Logic ---
     setTimeout(() => {
       let bestMatch = null;
-      let maxKeywordsMatched = 0;
+      let maxScore = 0;
 
-      // Combine all knowledge sectors for scanning
-      const allKnowledge = [
-        ...JUNGSUNG_DB.knowledge_base,
-        ...(JUNGSUNG_DB.knowledge_base_system || [])
-      ];
+      // Extract all potential knowledge sectors dynamically
+      const allKnowledge = Object.values(JUNGSUNG_DB)
+        .filter(val => Array.isArray(val))
+        .flat();
 
-      // Scan all sectors for the best match
+      // Scan all entries for the best score
       allKnowledge.forEach(entry => {
-        let matchCount = 0;
-        entry.keywords.forEach(kw => {
-          // Case-insensitive inclusion check
-          if (userMsg.includes(kw.toLowerCase())) {
-            // Weighted match: longer keywords count more
-            matchCount += kw.length > 5 ? 2 : 1;
-          }
-        });
+        let score = 0;
 
-        if (matchCount > maxKeywordsMatched) {
-          maxKeywordsMatched = matchCount;
+        // 1. Keyword Score (Weighted by length)
+        if (entry.keywords) {
+          entry.keywords.forEach(kw => {
+            if (userMsg.includes(kw.toLowerCase())) {
+              // Exact word matching or sub-phrase matching with weight
+              score += kw.length; 
+            }
+          });
+        }
+
+        // 2. Question Score (High priority for matching exact/similar questions)
+        if (entry.questions) {
+          entry.questions.forEach(q => {
+            const questionStr = q.toLowerCase();
+            if (userMsg.includes(questionStr) || questionStr.includes(userMsg)) {
+              // Huge bonus for question match
+              score += 20;
+            }
+          });
+        }
+
+        if (score > maxScore) {
+          maxScore = score;
           bestMatch = entry;
         }
       });
 
       let response = "";
 
-      if (bestMatch && maxKeywordsMatched > 0) {
+      if (bestMatch && maxScore > 0) {
         response = bestMatch.answer;
       } else {
         // Fallback or contextual help
@@ -212,7 +225,7 @@ function App() {
         } else if (userMsg.includes("bofu")) {
           response = `Giai đoạn ${JUNGSUNG_KNOWLEDGE.strategies.BOFU.goal}: ${JUNGSUNG_KNOWLEDGE.strategies.BOFU.content}.`;
         } else {
-          response = "Tôi là Jungsung AI Expert. Bạn có thể hỏi về Triết lý thương hiệu, Thành phần nguyên liệu (Bột nấm, Tảo bẹ...), Công nghệ nghiền siêu mịn, hoặc các chỉ số Dashboard (Overview/Research/Strategy). Bạn cần tôi giải đáp phần nào?";
+          response = "Tôi là Jungsung AI Expert. Bạn có thể hỏi về Triết lý thương hiệu, Thành phần nguyên liệu (Bột nấm, Tảo bẹ...), Công nghệ nghiền siêu mịn, hoặc các chỉ số Dashboard. Bạn cần tôi giải đáp phần nào?";
         }
       }
       
