@@ -362,6 +362,43 @@ function App() {
     </>
   );
 
+  // Smart Fallback Helper
+  const getSmartFallback = (item, field) => {
+    const kw = (item["Keyword (Từ khóa)"] || item.keyword || "").toLowerCase();
+    const stage = (item["Funnel Stage"] || item.stage || item.funnel || "TOFU").toUpperCase();
+
+    if (field === 'intent') {
+      if (kw.includes("mua") || kw.includes("giá") || stage === "BOFU") return "Mua sắm (Transactional)";
+      if (kw.includes("là gì") || kw.includes("cách") || stage === "TOFU") return "Thông tin (Informational)";
+      return "Khám phá (Navigational)";
+    }
+    
+    if (field === 'outcome') {
+      if (item.Content_Type || item.product || item["Recommended Product"]) return item.Content_Type || item.product || item["Recommended Product"];
+      if (stage === "TOFU") return "Blog hướng dẫn / Video Reels";
+      if (stage === "MOFU") return "Ebook / Quiz so sánh";
+      if (stage === "BOFU") return "Landing Page Chốt đơn / Coupon";
+      return "Phân tích Strategy...";
+    }
+
+    if (field === 'insight') {
+      if (item.Title_Idea || item.hook || item.Marketing_Hook || item["Marketing Hook"]) return item.Title_Idea || item.hook || item.Marketing_Hook || item["Marketing Hook"];
+      if (stage === "TOFU") return "Bật mí bí kíp sử dụng Jungsung chuẩn Hàn";
+      if (stage === "MOFU") return "Top 5 sai lầm khi chọn gia vị cho gia đình";
+      if (stage === "BOFU") return "Cơ hội sở hữu trọn bộ Jungsung với giá sốc";
+      return "Đang lên ý tưởng giật tít...";
+    }
+
+    if (field === 'score') {
+      if (item.score || item.potential_score) return item.score || item.potential_score;
+      if (stage === "BOFU") return 9;
+      if (stage === "MOFU") return 8;
+      return 7;
+    }
+
+    return "-";
+  };
+
   const renderResearch = () => (
     <div className="table-container fade-in">
       <div className="table-header">
@@ -394,16 +431,14 @@ function App() {
                 <td style={{ fontWeight: 600 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     {k["Keyword (Từ khóa)"] || k.keyword || k.Keyword}
-                    {(k.score || k.potential_score) && (
-                      <span title="AI Potential Score" style={{ color: '#f59e0b', fontSize: '0.75rem', background: 'rgba(245, 158, 11, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>
-                        {k.score || k.potential_score}/10
-                      </span>
-                    )}
+                    <span title="AI Potential Score" style={{ color: '#f59e0b', fontSize: '0.75rem', background: 'rgba(245, 158, 11, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>
+                      {getSmartFallback(k, 'score')}/10
+                    </span>
                   </div>
                 </td>
                 <td>
                   <span className="intent-badge" style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}>
-                    {k.Intent || k.intent || "Checking..." }
+                    {getSmartFallback(k, 'intent')}
                   </span>
                 </td>
                 <td>
@@ -412,10 +447,10 @@ function App() {
                   </span>
                 </td>
                 <td style={{ fontSize: '0.85rem', color: '#cbd5e1' }}>
-                  {k.Content_Type || k.product || k["Recommended Product"] || "-"}
+                  {getSmartFallback(k, 'outcome')}
                 </td>
                 <td style={{ fontSize: '0.8rem', fontStyle: 'italic', color: '#94a3b8', maxWidth: '250px' }}>
-                  {k.Title_Idea || k.hook || k.marketing_hook || k["Marketing Hook"] || "-"}
+                  {getSmartFallback(k, 'insight')}
                 </td>
                 <td>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
