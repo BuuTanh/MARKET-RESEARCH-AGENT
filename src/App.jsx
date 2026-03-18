@@ -100,6 +100,21 @@ function App() {
   }]);
   const [liveData, setLiveData] = useState([]);
   const [isFetching, setIsFetching] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications] = useState([
+    { id: 1, title: 'New Keyword Detected', desc: 'Added "Gia vị hữu cơ cho bé" to Sheets.', time: '2m ago' },
+    { id: 2, title: 'Analysis Complete', desc: 'n8n finished processing 5 keywords.', time: '1h ago' },
+    { id: 3, title: 'Email Sent', desc: 'Strategy report sent to admin@jungsung.com', time: '3h ago' }
+  ]);
+  const [selectedCampaign, setSelectedCampaign] = useState(null);
+  const [showNewCampaignModal, setShowNewCampaignModal] = useState(false);
+
+  // Filtered data for search
+  const filteredResearchData = (liveData.length > 0 ? liveData : MOCK_KEYWORDS).filter(item => {
+    const kw = (item["Keyword (Từ khóa)"] || item.keyword || item.Keyword || "").toLowerCase();
+    return kw.includes(searchTerm.toLowerCase());
+  });
 
   // Export CSV Logic
   const exportToCSV = () => {
@@ -325,7 +340,7 @@ function App() {
           </tr>
         </thead>
         <tbody>
-          {(liveData.length > 0 ? liveData : MOCK_KEYWORDS).map((k, index) => (
+          {filteredResearchData.map((k, index) => (
             <tr key={k.id || index}>
               <td style={{ fontWeight: 600 }}>{k["Keyword (Từ khóa)"] || k.keyword || k.Keyword}</td>
               <td>{k.Search_Volume || k.volume || "Checking..."}</td>
@@ -382,40 +397,116 @@ function App() {
     </div>
   );
 
-  const renderCampaign = () => (
-    <div className="campaign-list fade-in">
-      <div className="stat-card glass">
-        <div className="card-header">
-          <h3>Active Content Campaigns</h3>
-          <button className="btn-primary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.7rem' }}>+ New Campaign</button>
-        </div>
-        <div className="campaign-table-wrapper">
-          <table className="campaign-table">
-            <thead>
-              <tr>
-                <th>Campaign Name</th>
-                <th>Channel</th>
-                <th>Status</th>
-                <th>Performance</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[
-                { name: "Jungsung x Mẹ Bỉm sữa Review", channel: "TikTok", status: "Running", perf: "High", color: "#3b82f6" },
-                { name: "Sạch lành chuẩn Hàn (Branding)", channel: "Facebook", status: "Draft", perf: "-", color: "#94a3b8" },
-                { name: "Google Ads - Keywords BOFU", channel: "Search", status: "Running", perf: "Medium", color: "#10b981" },
-              ].map((c, i) => (
-                <tr key={i}>
-                  <td style={{ fontWeight: 600 }}>{c.name}</td>
-                  <td><span className="channel-pill">{c.channel}</span></td>
-                  <td><span className={`status-pill ${c.status.toLowerCase()}`}>{c.status}</span></td>
-                  <td style={{ color: '#10b981', fontWeight: 800 }}>{c.perf}</td>
-                  <td><button className="header-btn"><ArrowUpRight size={14} /></button></td>
+  const renderCampaign = () => {
+    if (selectedCampaign) return renderCampaignDetails();
+    
+    return (
+      <div className="campaign-list fade-in">
+        <div className="stat-card glass">
+          <div className="card-header">
+            <h3>Active Content Campaigns</h3>
+            <button className="btn-primary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.7rem' }} onClick={() => setShowNewCampaignModal(true)}>+ New Campaign</button>
+          </div>
+          <div className="campaign-table-wrapper">
+            <table className="campaign-table">
+              <thead>
+                <tr>
+                  <th>Campaign Name</th>
+                  <th>Channel</th>
+                  <th>Status</th>
+                  <th>Performance</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {[
+                  { name: "Jungsung x Mẹ Bỉm sữa Review", channel: "TikTok", status: "Running", perf: "High", color: "#3b82f6" },
+                  { name: "Sạch lành chuẩn Hàn (Branding)", channel: "Facebook", status: "Draft", perf: "-", color: "#94a3b8" },
+                  { name: "Google Ads - Keywords BOFU", channel: "Search", status: "Running", perf: "Medium", color: "#10b981" },
+                ].map((c, i) => (
+                  <tr key={i}>
+                    <td style={{ fontWeight: 600 }}>{c.name}</td>
+                    <td><span className="channel-pill">{c.channel}</span></td>
+                    <td><span className={`status-pill ${c.status.toLowerCase()}`}>{c.status}</span></td>
+                    <td style={{ color: '#10b981', fontWeight: 800 }}>{c.perf}</td>
+                    <td><button className="header-btn" onClick={() => setSelectedCampaign(c)}><ArrowUpRight size={14} /></button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {renderNewCampaignModal()}
+      </div>
+    );
+  };
+
+  const renderNotifications = () => (
+    <div className={`notifications-dropdown glass ${showNotifications ? 'show' : ''}`}>
+      <div className="dropdown-header">Notifications</div>
+      <div className="notifications-list">
+        {notifications.map(n => (
+          <div key={n.id} className="notif-item">
+            <div className="notif-title">{n.title}</div>
+            <div className="notif-desc">{n.desc}</div>
+            <div className="notif-time">{n.time}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderNewCampaignModal = () => (
+    <div className={`modal-overlay ${showNewCampaignModal ? 'show' : ''}`} onClick={() => setShowNewCampaignModal(false)}>
+      <div className="modal-content glass" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>Create New Campaign</h3>
+          <button className="close-btn" onClick={() => setShowNewCampaignModal(false)}>×</button>
+        </div>
+        <form className="modal-form" onSubmit={e => { e.preventDefault(); setShowNewCampaignModal(false); alert('Campaign created successfully (Simulated)'); }}>
+          <div className="form-group">
+            <label>Campaign Name</label>
+            <input type="text" placeholder="e.g. TikTok Review" required />
+          </div>
+          <div className="form-group">
+            <label>Channel</label>
+            <select><option>TikTok</option><option>Facebook</option><option>YouTube</option><option>Google Search</option></select>
+          </div>
+          <button type="submit" className="btn-primary w-100">Khởi tạo Chiến dịch</button>
+        </form>
+      </div>
+    </div>
+  );
+
+  const renderCampaignDetails = () => (
+    <div className="campaign-details fade-in">
+      <button className="btn-secondary mb-1" onClick={() => setSelectedCampaign(null)}>← Quay lại Danh sách</button>
+      <div className="stat-card glass">
+        <div className="detail-header">
+          <h2 className="gradient-text">{selectedCampaign.name}</h2>
+          <span className={`status-pill ${selectedCampaign.status.toLowerCase()}`}>{selectedCampaign.status}</span>
+        </div>
+        <div className="detail-grid">
+          <div className="detail-stat">
+            <p>Channel</p>
+            <h3>{selectedCampaign.channel}</h3>
+          </div>
+          <div className="detail-stat">
+            <p>Performance</p>
+            <h3 style={{ color: '#10b981' }}>{selectedCampaign.perf}</h3>
+          </div>
+          <div className="detail-stat">
+            <p>ROI Dự báo</p>
+            <h3>+2.4x</h3>
+          </div>
+        </div>
+        <div className="detail-section">
+          <h4>Kế hoạch Content (AI Suggested)</h4>
+          <p>Dựa trên Research, chiến dịch này sẽ nhắm vào nhóm khách hàng TOFU với thông điệp: "Gia vị Jungsung - Tinh hoa tự nhiên Hàn Quốc cho sức khỏe gia đình".</p>
+          <div className="tactics-list">
+            <div className="tactic-item"><CheckCircle2 size={14} color="#10b981" /> <span>Hợp tác 5 KOC TikTok ngành Mẹ & Bé</span></div>
+            <div className="tactic-item"><CheckCircle2 size={14} color="#10b981" /> <span>Chạy Ads Landing Page giới thiệu bột nấm Dasima</span></div>
+          </div>
         </div>
       </div>
     </div>
@@ -472,8 +563,26 @@ function App() {
             <h1 className="header-title">System <span className="gradient-text">Intelligence</span></h1>
           </div>
           <div className="header-actions">
-            <button className="header-btn"><Search size={18} /></button>
-            <button className="header-btn"><Mail size={18} /><span className="notif-dot"></span></button>
+            <div className="search-wrapper">
+              <Search size={18} className="search-icon" />
+              <input 
+                type="text" 
+                placeholder="Tìm từ khóa..." 
+                className="header-search-input"
+                value={searchTerm}
+                onChange={e => {
+                  setSearchTerm(e.target.value);
+                  if (activeTab !== 'research') setActiveTab('research');
+                }}
+              />
+            </div>
+            <div className="notif-wrapper">
+              <button className="header-btn" onClick={() => setShowNotifications(!showNotifications)}>
+                <Mail size={18} />
+                <span className="notif-dot"></span>
+              </button>
+              {renderNotifications()}
+            </div>
           </div>
         </header>
 
