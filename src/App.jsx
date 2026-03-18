@@ -31,21 +31,11 @@ import {
   Cell
 } from 'recharts';
 
-/* --- Jungsung Brand Knowledge Base --- */
+import JUNGSUNG_DB from './knowledge_base.json';
+
+/* --- Jungsung Brand Knowledge Base (Legacy fallback) --- */
 const JUNGSUNG_KNOWLEDGE = {
-  brand: {
-    name: "Jungsung (정성)",
-    ceo: "In-kyung Kim",
-    philosophy: "Triết lý 3 Không: 0% chất phụ gia, 0% hương liệu nhân tạo, 100% nguyên liệu tự nhiên.",
-    mission: "Mang tinh hoa gia vị truyền thống Hàn Quốc đến từng bữa cơm gia đình với sự tận tâm (Jungsung).",
-    safety: "Chứng nhận HACCP, quy trình sản xuất khép kín hiện đại.",
-  },
-  products: [
-    { name: "Bột Nấm Hương 100%", description: "Nấm hương nội địa Hàn Quốc, giữ trọn vị Umami." },
-    { name: "Nước Tương Dasima", description: "Vị ngọt thanh từ tảo bẹ tự nhiên." },
-    { name: "Chicken Stock (Cốt gà)", description: "Đậm đà, không bột ngọt, tốt cho sức khỏe." },
-    { name: "Khối Hải Sản Cô Đặc", description: "Tiện lợi, giữ trọn hương vị biển cả." }
-  ],
+  brand: JUNGSUNG_DB.brand_name,
   strategies: {
     TOFU: {
       goal: "Nhận thức (Awareness)",
@@ -106,7 +96,7 @@ function App() {
   const [chatInput, setChatInput] = useState('');
   const [messages, setMessages] = useState([{ 
     role: 'bot', 
-    text: 'Chào bạn! Tôi là chuyên gia Jungsung AI. Tôi hiểu rõ về tinh hoa gia vị Hàn Quốc và chiến lược Marketing. Bạn cần tôi tư vấn gì về từ khóa hay thương hiệu Jungsung không?' 
+    text: 'Chào bạn! Tôi là Jungsung AI. Tôi đã được cập nhật kho kiến thức mới nhất về thương hiệu. Bạn cần tìm hiểu gì về sản phẩm, chứng nhận hay chiến lược bán hàng của Jungsung không?' 
   }]);
   const [liveData, setLiveData] = useState([]);
   const [isFetching, setIsFetching] = useState(false);
@@ -181,22 +171,41 @@ function App() {
     setMessages(prev => [...prev, { role: 'user', text: chatInput }]);
     setChatInput('');
 
-    // Jungsung Intelligent Brain Logic
+    // --- Advanced AI Scanning & Response Logic ---
     setTimeout(() => {
-      let response = "Câu hỏi rất hay! Để phát triển Jungsung, chúng ta nên kết hợp giữa triết lý 'Tận tâm' và dữ liệu thị trường thực tế.";
-      
-      if (userMsg.includes("ceo") || userMsg.includes("founder") || userMsg.includes("kim")) {
-        response = `CEO của Jungsung là bà ${JUNGSUNG_KNOWLEDGE.brand.ceo}. Bà khởi nghiệp với mong muốn mang lại gia vị an toàn tuyệt đối cho gia đình.`;
-      } else if (userMsg.includes("3 không") || userMsg.includes("triết lý")) {
-        response = `Jungsung cam kết ${JUNGSUNG_KNOWLEDGE.brand.philosophy}. Đây là điểm bán hàng độc nhất (USP) giúp chúng ta cạnh tranh.`;
-      } else if (userMsg.includes("sản phẩm") || userMsg.includes("bán gì")) {
-        response = `Các sản phẩm chủ lực gồm: ${JUNGSUNG_KNOWLEDGE.products.map(p => p.name).join(", ")}. Bạn muốn tôi tư vấn chiến lược cho sản phẩm nào?`;
-      } else if (userMsg.includes("tofu") || userMsg.includes("là gì")) {
-        response = `Giai đoạn ${JUNGSUNG_KNOWLEDGE.strategies.TOFU.goal}: ${JUNGSUNG_KNOWLEDGE.strategies.TOFU.content}. Chiến thuật gợi ý: ${JUNGSUNG_KNOWLEDGE.strategies.TOFU.tactics.join(", ")}.`;
-      } else if (userMsg.includes("bofu") || userMsg.includes("mua")) {
-        response = `Giai đoạn ${JUNGSUNG_KNOWLEDGE.strategies.BOFU.goal}: ${JUNGSUNG_KNOWLEDGE.strategies.BOFU.content}. Chạy ngay: ${JUNGSUNG_KNOWLEDGE.strategies.BOFU.tactics.join(", ")}.`;
-      } else if (userMsg.includes("haccp") || userMsg.includes("an toàn")) {
-        response = `Bạn hoàn toàn yên tâm, Jungsung đạt ${JUNGSUNG_KNOWLEDGE.brand.safety}. Đây là bảo chứng mạnh mẽ nhất khi làm Marketing.`;
+      let bestMatch = null;
+      let maxKeywordsMatched = 0;
+
+      // Scan Knowledge Base for matches
+      JUNGSUNG_DB.knowledge_base.forEach(entry => {
+        let matchCount = 0;
+        entry.keywords.forEach(kw => {
+          if (userMsg.includes(kw.toLowerCase())) {
+            matchCount++;
+          }
+        });
+
+        if (matchCount > maxKeywordsMatched) {
+          maxKeywordsMatched = matchCount;
+          bestMatch = entry;
+        }
+      });
+
+      let response = "";
+
+      if (bestMatch && maxKeywordsMatched > 0) {
+        response = bestMatch.answer;
+      } else {
+        // Fallback strategies check
+        if (userMsg.includes("tofu")) {
+          response = `Giai đoạn ${JUNGSUNG_KNOWLEDGE.strategies.TOFU.goal}: ${JUNGSUNG_KNOWLEDGE.strategies.TOFU.content}.`;
+        } else if (userMsg.includes("mofu")) {
+          response = `Giai đoạn ${JUNGSUNG_KNOWLEDGE.strategies.MOFU.goal}: ${JUNGSUNG_KNOWLEDGE.strategies.MOFU.content}.`;
+        } else if (userMsg.includes("bofu")) {
+          response = `Giai đoạn ${JUNGSUNG_KNOWLEDGE.strategies.BOFU.goal}: ${JUNGSUNG_KNOWLEDGE.strategies.BOFU.content}.`;
+        } else {
+          response = "Tôi ghi nhận yêu cầu của bạn. Thông thạo nhất về Jungsung vẫn là các chủ đề: Ý nghĩa thương hiệu, Thành phần tự nhiên, Công nghệ nghiền siêu mịn và các dòng sản phẩm của chúng tôi. Bạn có thể hỏi cụ thể hơn không?";
+        }
       }
       
       setMessages(prev => [...prev, { role: 'bot', text: response }]);
