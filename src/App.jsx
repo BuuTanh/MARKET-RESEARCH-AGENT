@@ -302,72 +302,6 @@ function App() {
     }, 600);
   };
 
-  /* --- Render Functions --- */
-  const renderDashboard = () => (
-    <>
-      <div className="stats-grid">
-        {[
-          { label: 'Total Keywords', value: liveData.length > 0 ? liveData.length : '128', icon: Search, color: '#3b82f6', trend: '+12%' },
-          { label: 'High Priority', value: '42', icon: Flame, color: '#ef4444', trend: '+5%' },
-          { label: 'BOFU Intent', value: '18', icon: Zap, color: '#f59e0b', trend: '+18%' },
-          { label: 'AI Processed', value: '98%', icon: ShieldCheck, color: '#10b981', trend: 'Stable' },
-        ].map((stat, i) => (
-          <div key={i} className="stat-card glass shimmer-bg">
-            <div className={`trend-badge ${stat.trend.includes('-') ? 'negative' : ''}`}>{stat.trend}</div>
-            <div className="stat-icon-bg" style={{ color: stat.color }}><stat.icon size={24} /></div>
-            <p className="stat-label">{stat.label}</p>
-            <p className="stat-value">{stat.value}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className="grid-2-1">
-        <div className="stat-card glass">
-          <div className="card-header">
-            <h3>Market Search Volume</h3>
-            <button className="header-btn" onClick={refreshData} title="Làm mới dữ liệu từ n8n">
-              <TrendingUp size={18} className={isFetching ? "spin" : ""} />
-            </button>
-          </div>
-          <div style={{ height: '300px' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={TREND_DATA}>
-                <defs>
-                  <linearGradient id="colorTrend" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                <XAxis dataKey="name" stroke="#64748b" axisLine={false} tickLine={false} />
-                <YAxis hide />
-                <Tooltip contentStyle={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }} />
-                <Area type="monotone" dataKey="volume" stroke="#3b82f6" strokeWidth={3} fill="url(#colorTrend)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="stat-card glass">
-          <div className="card-header">
-            <h3>Funnel Stages</h3>
-            <PieIcon size={18} color="#94a3b8" />
-          </div>
-          {[
-            { label: 'Awareness (TOFU)', color: '#3b82f6', val: 45 },
-            { label: 'Consideration (MOFU)', color: '#8b5cf6', val: 30 },
-            { label: 'Conversion (BOFU)', color: '#10b981', val: 25 },
-          ].map((f, i) => (
-            <div key={i} className="progress-container">
-              <div className="progress-header"><span>{f.label}</span> <span>{f.val}%</span></div>
-              <div className="progress-bg"><div className="progress-fill" style={{ width: `${f.val}%`, background: f.color }} /></div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </>
-  );
-
   // Smart Fallback Helper
   const getSmartFallback = (item, field) => {
     const kw = (item["Keyword (Từ khóa)"] || item.keyword || item.Keyword || "").toLowerCase();
@@ -480,86 +414,64 @@ function App() {
     );
   };
 
-  const renderOverview = () => (
-    <div className="overview-container fade-in">
-      <div className="metrics-grid">
-        <div className="metric-card">
-          <div className="metric-icon" style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}>
-            <TrendingUp size={24} />
+  /* --- Render Functions --- */
+  const renderDashboard = () => (
+    <>
+      <div className="stats-grid">
+        {[
+          { label: 'Total Keywords', value: liveData.length > 0 ? liveData.length : '128', icon: Search, color: '#3b82f6', trend: '+12%' },
+          { label: 'High Priority', value: '42', icon: Flame, color: '#ef4444', trend: '+5%' },
+          { label: 'BOFU Intent', value: '18', icon: Zap, color: '#f59e0b', trend: '+18%' },
+          { label: 'AI Processed', value: '98%', icon: ShieldCheck, color: '#10b981', trend: 'Stable' },
+        ].map((stat, i) => (
+          <div key={i} className="stat-card glass shimmer-bg">
+            <div className={`trend-badge ${stat.trend.includes('-') ? 'negative' : ''}`}>{stat.trend}</div>
+            <div className="stat-icon-bg" style={{ color: stat.color }}><stat.icon size={24} /></div>
+            <p className="stat-label">{stat.label}</p>
+            <p className="stat-value">{stat.value}</p>
           </div>
-          <div className="metric-info">
-            <span className="metric-label">Total Volume</span>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-              <h2 className="metric-value">128.4K</h2>
-              <span className="metric-trend positive">+12%</span>
-            </div>
-          </div>
-        </div>
-        <div className="metric-card">
-          <div className="metric-icon" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
-            <Target size={24} />
-          </div>
-          <div className="metric-info">
-            <span className="metric-label">Avg. Intimacy</span>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-              <h2 className="metric-value">84%</h2>
-              <span className="metric-trend positive">+5.2%</span>
-            </div>
-          </div>
-        </div>
-        <div className="metric-card">
-          <div className="metric-icon" style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }}>
-            <Zap size={24} />
-          </div>
-          <div className="metric-info">
-            <span className="metric-label">AI Insights</span>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-              <h2 className="metric-value">1,420+</h2>
-              <span className="metric-trend positive">+240</span>
-            </div>
-          </div>
-        </div>
+        ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginTop: '1.5rem' }}>
-        <div className="chart-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-            <h3>Market Trends</h3>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <span style={{ fontSize: '0.75rem', padding: '4px 8px', borderRadius: '4px', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}>Volume</span>
-              <span style={{ fontSize: '0.75rem', padding: '4px 8px', borderRadius: '4px', background: 'rgba(255, 255, 255, 0.05)', color: '#94a3b8' }}>Seasonality</span>
-            </div>
+      <div className="grid-2-1">
+        <div className="stat-card glass">
+          <div className="card-header">
+            <h3>Market Search Volume</h3>
+            <button className="header-btn" onClick={refreshData} title="Làm mới dữ liệu từ n8n">
+              <TrendingUp size={18} className={isFetching ? "spin" : ""} />
+            </button>
           </div>
-          <div style={{ height: '220px', width: '100%' }}>
+          <div style={{ height: '300px' }}>
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={TREND_DATA}>
                 <defs>
-                  <linearGradient id="colorVolume" x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient id="colorTrend" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
                     <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#475569', fontSize: 12}} />
-                <Tooltip 
-                  contentStyle={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px', color: '#fff' }}
-                  itemStyle={{ color: '#3b82f6' }}
-                />
-                <Area type="monotone" dataKey="volume" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorVolume)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                <XAxis dataKey="name" stroke="#64748b" axisLine={false} tickLine={false} />
+                <YAxis hide />
+                <Tooltip contentStyle={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }} />
+                <Area type="monotone" dataKey="volume" stroke="#3b82f6" strokeWidth={3} fill="url(#colorTrend)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="chart-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+        <div className="stat-card glass">
+          <div className="card-header">
             <h3>Funnel Stages</h3>
-            <PieChartIcon size={20} color="#94a3b8" />
+            <PieChartIcon size={18} color="#94a3b8" />
           </div>
           <FunnelChart />
         </div>
       </div>
-    </div>
+    </>
   );
+
+
 
   const renderResearch = () => (
     <div className="table-container fade-in">
