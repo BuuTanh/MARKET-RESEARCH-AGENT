@@ -331,11 +331,11 @@ function App() {
       <table>
         <thead>
           <tr>
-            <th>Keyword</th>
-            <th>Search Volume</th>
-            <th>Difficulty</th>
+            <th>Keyword (Từ khóa)</th>
             <th>Intent</th>
-            <th>Trend</th>
+            <th>Funnel Stage</th>
+            <th>Recommended Product</th>
+            <th>Marketing Hook</th>
             <th>Action</th>
           </tr>
         </thead>
@@ -343,26 +343,26 @@ function App() {
           {filteredResearchData.map((k, index) => (
             <tr key={k.id || index}>
               <td style={{ fontWeight: 600 }}>{k["Keyword (Từ khóa)"] || k.keyword || k.Keyword}</td>
-              <td>{k.Search_Volume || k.volume || "Checking..."}</td>
-              <td>
-                <span className={`diff-badge ${(k.Difficulty || k.difficulty || "low").toLowerCase()}`}>
-                  {k.Difficulty || k.difficulty || "Low"}
-                </span>
-              </td>
               <td>
                 <span className="intent-badge" style={{ 
                   background: (k.Intent || k.intent) === 'Transactional' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(59, 130, 246, 0.1)',
                   color: (k.Intent || k.intent) === 'Transactional' ? '#10b981' : '#3b82f6'
-                }}>{k.Intent || k.intent || "Awareness"}</span>
+                }}>{k.Intent || k.intent || "Pending..."}</span>
               </td>
-              <td style={{ color: (k.Trend || k.trend || "+").includes('+') ? '#10b981' : '#ef4444', fontWeight: 700 }}>
-                {k.Trend || k.trend || "+15%"}
+              <td>
+                <span className={`funnel-pill ${(k["Funnel Stage"] || k.funnel || "tofu").toLowerCase().split(' ')[0]}`}>
+                  {k["Funnel Stage"] || k.funnel || "Pending..."}
+                </span>
+              </td>
+              <td style={{ fontSize: '0.85rem', color: '#cbd5e1' }}>{k["Recommended Product"] || k.product || "-"}</td>
+              <td style={{ fontSize: '0.8rem', fontStyle: 'italic', color: '#94a3b8' }}>
+                {k["Marketing Hook"] || k.Marketing_Hook || "-"}
               </td>
               <td>
                 <button 
                   className="btn-icon" 
                   onClick={() => analyzeKeyword(k["Keyword (Từ khóa)"] || k.keyword || k.Keyword)}
-                  title="Phân tích & Ghi vào Sheets"
+                  title="Phân tích chuyên sâu"
                 >
                   <Bot size={16} color={k.Status === 'Done' ? '#10b981' : '#3b82f6'} />
                 </button>
