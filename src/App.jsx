@@ -55,23 +55,6 @@ const JUNGSUNG_KNOWLEDGE = {
   }
 };
 
-const STRATEGY_BRAIN = {
-  TOFU: {
-    goal: "Nâng cao nhận thức (Awareness)",
-    content: ["Blog review", "Infographic", "Video hướng dẫn cơ bản"],
-    keywords: ["là gì", "cách làm", "review", "so sánh", "tác hại", "tự nhiên"]
-  },
-  MOFU: {
-    goal: "Cân nhắc & Đánh giá (Consideration)",
-    content: ["Case study", "Webinar", "Bảng so sánh tính năng"],
-    keywords: ["tốt nhất", "giá", "hiệu quả", "hỗ trợ", "an toàn", "chứng nhận"]
-  },
-  BOFU: {
-    goal: "Chốt đơn (Conversion)",
-    content: ["Mã giảm giá", "Dùng thử miễn phí", "Tư vấn 1-1"],
-    keywords: ["mua ở đâu", "chính hãng", "khuyến mãi", "đăng ký", "địa chỉ", "đặt hàng"]
-  }
-};
 
 const MOCK_KEYWORDS = [
   { 
@@ -463,7 +446,7 @@ function App() {
         <div className="stat-card glass">
           <div className="card-header">
             <h3>Funnel Stages</h3>
-            <PieChartIcon size={18} color="#94a3b8" />
+            <PieIcon size={18} color="#94a3b8" />
           </div>
           <FunnelChart />
         </div>
